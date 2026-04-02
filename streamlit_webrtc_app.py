@@ -4,7 +4,7 @@ import numpy as np
 from pathlib import Path
 from streamlit_webrtc import webrtc_streamer, VideoTransformerBase, RTCConfiguration
 
-from src.face_mesh_utils import FaceMeshDetector
+from src.simple_face_detector import SimpleFaceDetector
 from src.ear import compute_ear
 
 st.set_page_config(page_title="Drowsiness Detection", layout="wide")
@@ -23,7 +23,7 @@ RTC_CONFIGURATION = RTCConfiguration(
 # ===== Khởi tạo detector =====
 @st.cache_resource
 def load_models():
-    detector = FaceMeshDetector()
+    detector = SimpleFaceDetector()
     return detector
 
 detector = load_models()
