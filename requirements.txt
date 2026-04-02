@@ -1,0 +1,6 @@
+numpy>=1.26.0
+opencv-python>=4.10.0
+mediapipe==0.10.21
+tensorflow>=2.16.0
+pygame>=2.6.0
+scipy>=1.13.0
