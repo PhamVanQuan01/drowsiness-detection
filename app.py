@@ -296,10 +296,7 @@ def main() -> None:
                 (f"Right: {right_eye_state}", right_eye_color),
                 (f"Overall: {overall_state}", overall_color),
                 ("", (255, 255, 255)),
-                ("===== MODEL PRED =====", (255, 255, 255)),
-                (f"L-Closed: {left_closed_prob:.2f}", (255, 255, 255)),
-                (f"R-Closed: {right_closed_prob:.2f}", (255, 255, 255)),
-                ("", (255, 255, 255)),
+                
                 ("===== COUNTERS =====", (255, 255, 255)),
                 (f"Drowsy: {drowsy_counter}/{DROWSY_FRAMES_THRESHOLD}", (255, 255, 255)),
                 (f"Open: {open_eye_counter}/{OPEN_EYES_FRAMES_THRESHOLD}", (255, 255, 255)),
