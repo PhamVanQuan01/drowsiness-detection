@@ -24,11 +24,10 @@ FRAME_WIDTH = 960
 FRAME_HEIGHT = 720
 
 # Ngưỡng EAR: càng thấp thì càng dễ coi là nhắm mắt
-# Điều chỉnh cho phù hợp với kính mắt
-EAR_THRESHOLD = 0.15
+EAR_THRESHOLD = 0.17
 
-# Xác suất model dự đoán Closed_Eyes để coi là mắt nhắm (tăng threshold để chặt hơn)
-MODEL_CLOSED_CONF_THRESHOLD = 0.85
+# Xác suất model dự đoán Closed_Eyes để coi là mắt nhắm (chỉ dùng cho display)
+MODEL_CLOSED_CONF_THRESHOLD = 0.75
 
 # Số frame nhắm mắt liên tục để bật cảnh báo
 DROWSY_FRAMES_THRESHOLD = 15
@@ -176,21 +175,9 @@ def main() -> None:
             left_closed_by_model = is_eye_closed(left_pred)
             right_closed_by_model = is_eye_closed(right_pred)
 
-            # Chỉ coi là closed theo model khi cả 2 mắt đều đóng
-            closed_by_model = left_closed_by_model and right_closed_by_model
-
+            # ===== LOGIC: Chỉ dùng EAR (đơn giản & reliable) =====
             # EAR thấp hơn ngưỡng thì coi là nhắm
-            closed_by_ear = avg_ear < EAR_THRESHOLD
-
-            # ===== LOGIC: Ưu tiên EAR hơn model =====
-            # Nếu EAR cao (mắt mở) -> bỏ qua model prediction (model có thể sai)
-            # Nếu EAR thấp AND model cũng nói đóng -> chắc chắn đóng
-            if not closed_by_ear and closed_by_model:
-                # EAR nói mắt mở nhưng model nói mắt đóng -> tin EAR hơn
-                eyes_closed = False
-            else:
-                # Ngôn lại dùng logic AND bình thường
-                eyes_closed = closed_by_ear and closed_by_model
+            eyes_closed = avg_ear < EAR_THRESHOLD
 
             # ===== Logic bật/tắt cảnh báo =====
             if eyes_closed:
@@ -287,12 +274,12 @@ def main() -> None:
             line_height = int(font_scale * 20)
             
             # Determine eye states
-            left_eye_state = "CLOSED" if left_closed_by_model else "OPEN"
-            right_eye_state = "CLOSED" if right_closed_by_model else "OPEN"
+            left_eye_state = "CLOSED" if left_ear < EAR_THRESHOLD else "OPEN"
+            right_eye_state = "CLOSED" if right_ear < EAR_THRESHOLD else "OPEN"
             overall_state = "CLOSED" if eyes_closed else "OPEN"
             
-            left_eye_color = (0, 0, 255) if left_closed_by_model else (0, 255, 0)
-            right_eye_color = (0, 0, 255) if right_closed_by_model else (0, 255, 0)
+            left_eye_color = (0, 0, 255) if left_ear < EAR_THRESHOLD else (0, 255, 0)
+            right_eye_color = (0, 0, 255) if right_ear < EAR_THRESHOLD else (0, 255, 0)
             overall_color = (0, 0, 255) if eyes_closed else (0, 255, 0)
             
             stats = [

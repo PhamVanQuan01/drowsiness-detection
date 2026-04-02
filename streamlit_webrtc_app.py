@@ -11,7 +11,7 @@ st.set_page_config(page_title="Drowsiness Detection", layout="wide")
 st.title("😴 Drowsiness Detection (Webcam)")
 
 # ===== Cấu hình =====
-EAR_THRESHOLD = 0.15
+EAR_THRESHOLD = 0.17
 DROWSY_FRAMES_THRESHOLD = 15
 OPEN_EYES_FRAMES_THRESHOLD = 20
 
