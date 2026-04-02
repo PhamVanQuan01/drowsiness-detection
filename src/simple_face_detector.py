@@ -29,6 +29,10 @@ class SimpleFaceDetector:
         self.eye_cascade = cv2.CascadeClassifier(
             cv2.data.haarcascades + 'haarcascade_eye.xml'
         )
+        # Cascades cho kính mắt
+        self.glasses_cascade = cv2.CascadeClassifier(
+            cv2.data.haarcascades + 'haarcascade_eye_tree_eyeglasses.xml'
+        )
     
     def _get_eye_contour_points(self, eye_region: np.ndarray, x_offset: int, y_offset: int) -> list[tuple[int, int]]:
         """Extract 6 points around eye region (similar to EAR index format)"""
@@ -60,6 +64,43 @@ class SimpleFaceDetector:
         crop = frame_bgr[y1:y2, x1:x2].copy()
         return crop if crop.size > 0 else None
     
+    @staticmethod
+    def _detect_pupils(face_gray: np.ndarray, face_x: int, face_y: int) -> np.ndarray:
+        """Detect pupils as dark regions (threshholding)"""
+        # Blur để giảm noise
+        blurred = cv2.GaussianBlur(face_gray, (5, 5), 0)
+        
+        # Histogram equalization
+        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+        equalized = clahe.apply(blurred)
+        
+        # Threshold để tìm dark regions (pupils)
+        _, thresh = cv2.threshold(equalized, 100, 255, cv2.THRESH_BINARY_INV)
+        
+        # Find contours
+        contours, _ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        
+        pupils = []
+        face_h, face_w = face_gray.shape
+        
+        # Tìm circular/elliptical contours (pupils thường tròn)
+        for contour in contours:
+            area = cv2.contourArea(contour)
+            if 50 < area < 500:  # Kích thước pupil hợp lý
+                x, y, w, h = cv2.boundingRect(contour)
+                aspect_ratio = float(w) / h if h > 0 else 0
+                
+                # Pupil phải gần hình tròn (aspect ratio gần 1)
+                if 0.7 < aspect_ratio < 1.3:
+                    pupils.append((x, y, w, h))
+        
+        # Return top 2 pupils (left và right)
+        if len(pupils) >= 2:
+            pupils = sorted(pupils, key=lambda p: p[0])  # Sort by x
+            return np.array(pupils[:2])
+        
+        return np.array([])
+    
     def process(self, frame_bgr: np.ndarray, draw: bool = True) -> FaceMeshResult:
         """Process frame and detect face + eyes"""
         gray = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2GRAY)
@@ -78,9 +119,31 @@ class SimpleFaceDetector:
         if draw:
             cv2.rectangle(output, (x, y), (x + w, y + h), (0, 255, 0), 2)
         
-        # Detect eyes in face region
+        # Detect eyes in face region (cả bình thường và kính)
         face_gray = gray[y:y + h, x:x + w]
-        eyes = self.eye_cascade.detectMultiScale(face_gray, 1.05, 4, minSize=(20, 20))
+        
+        # Thử detect eye thường
+        eyes = self.eye_cascade.detectMultiScale(
+            face_gray, 
+            scaleFactor=1.05,  # Nhạy hơn
+            minNeighbors=3,    # Giảm từ 4 xuống 3 để nhạy hơn
+            minSize=(15, 15)   # Nhỏ hơn
+        )
+        
+        # Nếu không tìm được eye thường, thử eye với kính
+        if len(eyes) < 2:
+            glasses = self.glasses_cascade.detectMultiScale(
+                face_gray,
+                scaleFactor=1.05,
+                minNeighbors=3,
+                minSize=(15, 15)
+            )
+            if len(glasses) >= 2:
+                eyes = glasses
+        
+        # Nếu vẫn không tìm được, phát hiện dark regions (pupils)
+        if len(eyes) < 2:
+            eyes = self._detect_pupils(face_gray, x, y)
         
         left_eye_points = None
         left_eye_crop = None

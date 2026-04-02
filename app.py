@@ -24,7 +24,8 @@ FRAME_WIDTH = 960
 FRAME_HEIGHT = 720
 
 # Ngưỡng EAR: càng thấp thì càng dễ coi là nhắm mắt
-EAR_THRESHOLD = 0.17
+# Điều chỉnh cho phù hợp với kính mắt
+EAR_THRESHOLD = 0.15
 
 # Xác suất model dự đoán Closed_Eyes để coi là mắt nhắm
 MODEL_CLOSED_CONF_THRESHOLD = 0.7
@@ -110,6 +111,11 @@ def main() -> None:
     open_eye_counter = 0
     no_face_counter = 0
     alarm_on = False
+    
+    # ===== FPS Counter =====
+    fps_start_time = time.time()
+    fps_frame_count = 0
+    fps = 0
 
     try:
         while True:
@@ -117,6 +123,14 @@ def main() -> None:
             if not ret:
                 print("[WARN] Không đọc được frame từ webcam.")
                 break
+
+            # ===== FPS Counter =====
+            fps_frame_count += 1
+            elapsed_time = time.time() - fps_start_time
+            if elapsed_time >= 1.0:
+                fps = fps_frame_count / elapsed_time
+                fps_frame_count = 0
+                fps_start_time = time.time()
 
             frame = cv2.flip(frame, 1)
             result = detector.process(frame, draw=True)
@@ -259,17 +273,33 @@ def main() -> None:
 
             cv2.rectangle(display, (bar_x1, bar_y1), (fill_x, bar_y2), bar_color, -1)
 
-            # ===== EAR nhỏ góc phải =====
-            cv2.putText(
-                display,
-                f"EAR: {avg_ear:.2f}",
-                (int(w * 0.8), int(h * 0.07)),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                font_scale * 0.6,
-                (255, 255, 255),
-                2,
-                cv2.LINE_AA,
-            )
+            # ===== STATS CORNER (góc phải) =====
+            right_x = int(w * 0.75)
+            right_y_start = int(h * 0.12)
+            line_height = int(font_scale * 25)
+            
+            stats = [
+                f"FPS: {fps:.1f}",
+                f"L-EAR: {left_ear:.2f}",
+                f"R-EAR: {right_ear:.2f}",
+                f"Drowsy: {drowsy_counter}/{DROWSY_FRAMES_THRESHOLD}",
+                f"Open: {open_eye_counter}",
+                f"No Face: {no_face_counter}",
+            ]
+            
+            for i, stat in enumerate(stats):
+                y_pos = right_y_start + (i * line_height)
+                color = (0, 255, 0) if i == 0 else (255, 255, 255)
+                cv2.putText(
+                    display,
+                    stat,
+                    (right_x, y_pos),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    font_scale * 0.5,
+                    color,
+                    1,
+                    cv2.LINE_AA,
+                )
 
             # ===== Hướng dẫn =====
             cv2.putText(
