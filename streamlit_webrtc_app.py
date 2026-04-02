@@ -6,18 +6,12 @@ from streamlit_webrtc import webrtc_streamer, VideoTransformerBase, RTCConfigura
 
 from src.face_mesh_utils import FaceMeshDetector
 from src.ear import compute_ear
-from src.inference import EyeStateClassifier
 
 st.set_page_config(page_title="Drowsiness Detection", layout="wide")
 st.title("😴 Drowsiness Detection (Webcam)")
 
 # ===== Cấu hình =====
-BASE_DIR = Path(__file__).resolve().parent
-MODEL_PATH = BASE_DIR / "models" / "eye_state_model_final.keras"
-LABEL_MAP_PATH = BASE_DIR / "models" / "label_map.json"
-
 EAR_THRESHOLD = 0.17
-MODEL_CLOSED_CONF_THRESHOLD = 0.7
 DROWSY_FRAMES_THRESHOLD = 15
 OPEN_EYES_FRAMES_THRESHOLD = 20
 
@@ -26,14 +20,13 @@ RTC_CONFIGURATION = RTCConfiguration(
     {"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]}
 )
 
-# ===== Khởi tạo detector & classifier =====
+# ===== Khởi tạo detector =====
 @st.cache_resource
 def load_models():
     detector = FaceMeshDetector()
-    classifier = EyeStateClassifier(MODEL_PATH, LABEL_MAP_PATH)
-    return detector, classifier
+    return detector
 
-detector, classifier = load_models()
+detector = load_models()
 
 # ===== State management =====
 if "drowsy_counter" not in st.session_state:
@@ -42,26 +35,6 @@ if "open_eye_counter" not in st.session_state:
     st.session_state.open_eye_counter = 0
 if "alarm_on" not in st.session_state:
     st.session_state.alarm_on = False
-
-
-def classify_eye_state(classifier, eye_crop):
-    if eye_crop is None or eye_crop.size == 0:
-        return {
-            "label": "Unknown",
-            "confidence": 0.0,
-            "probs": {},
-        }
-    return classifier.predict(eye_crop)
-
-
-def get_closed_prob(pred, label_name="Closed_Eyes"):
-    probs = pred.get("probs", {})
-    return float(probs.get(label_name, 0.0))
-
-
-def is_eye_closed(pred, label_name="Closed_Eyes", threshold=MODEL_CLOSED_CONF_THRESHOLD):
-    closed_prob = get_closed_prob(pred, label_name)
-    return closed_prob >= threshold
 
 
 class VideoProcessor(VideoTransformerBase):
@@ -82,16 +55,8 @@ class VideoProcessor(VideoTransformerBase):
         right_ear = compute_ear(result.right_eye_points) if result.right_eye_points else 0.0
         avg_ear = (left_ear + right_ear) / 2.0
 
-        # ===== Dự đoán model =====
-        left_pred = classify_eye_state(classifier, result.left_eye_crop)
-        right_pred = classify_eye_state(classifier, result.right_eye_crop)
-
-        left_closed_by_model = is_eye_closed(left_pred)
-        right_closed_by_model = is_eye_closed(right_pred)
-        closed_by_model = left_closed_by_model and right_closed_by_model
-
-        closed_by_ear = avg_ear < EAR_THRESHOLD
-        eyes_closed = closed_by_ear and closed_by_model
+        # ===== Phát hiện mắt nhắm dựa vào EAR =====
+        eyes_closed = avg_ear < EAR_THRESHOLD
 
         # ===== Logic cảnh báo =====
         if eyes_closed:
