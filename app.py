@@ -274,32 +274,56 @@ def main() -> None:
             cv2.rectangle(display, (bar_x1, bar_y1), (fill_x, bar_y2), bar_color, -1)
 
             # ===== STATS CORNER (góc phải) =====
-            right_x = int(w * 0.75)
-            right_y_start = int(h * 0.12)
-            line_height = int(font_scale * 25)
+            right_x = int(w * 0.72)
+            right_y_start = int(h * 0.10)
+            line_height = int(font_scale * 20)
+            
+            # Determine eye states
+            left_eye_state = "CLOSED" if left_closed_by_model else "OPEN"
+            right_eye_state = "CLOSED" if right_closed_by_model else "OPEN"
+            overall_state = "CLOSED" if eyes_closed else "OPEN"
+            
+            left_eye_color = (0, 0, 255) if left_closed_by_model else (0, 255, 0)
+            right_eye_color = (0, 0, 255) if right_closed_by_model else (0, 255, 0)
+            overall_color = (0, 0, 255) if eyes_closed else (0, 255, 0)
             
             stats = [
-                f"FPS: {fps:.1f}",
-                f"L-EAR: {left_ear:.2f}",
-                f"R-EAR: {right_ear:.2f}",
-                f"Drowsy: {drowsy_counter}/{DROWSY_FRAMES_THRESHOLD}",
-                f"Open: {open_eye_counter}",
-                f"No Face: {no_face_counter}",
+                ("===== SYSTEM INFO =====", (255, 255, 255)),
+                (f"FPS: {fps:.1f}", (0, 255, 0)),
+                ("", (255, 255, 255)),
+                ("===== EAR VALUES =====", (255, 255, 255)),
+                (f"L-EAR: {left_ear:.3f}", (255, 255, 255)),
+                (f"R-EAR: {right_ear:.3f}", (255, 255, 255)),
+                (f"AVG-EAR: {avg_ear:.3f}", (255, 255, 255)),
+                ("", (255, 255, 255)),
+                ("===== EYE STATE =====", (255, 255, 255)),
+                (f"Left: {left_eye_state}", left_eye_color),
+                (f"Right: {right_eye_state}", right_eye_color),
+                (f"Overall: {overall_state}", overall_color),
+                ("", (255, 255, 255)),
+                ("===== MODEL PRED =====", (255, 255, 255)),
+                (f"L-Closed: {left_closed_prob:.2f}", (255, 255, 255)),
+                (f"R-Closed: {right_closed_prob:.2f}", (255, 255, 255)),
+                ("", (255, 255, 255)),
+                ("===== COUNTERS =====", (255, 255, 255)),
+                (f"Drowsy: {drowsy_counter}/{DROWSY_FRAMES_THRESHOLD}", (255, 255, 255)),
+                (f"Open: {open_eye_counter}/{OPEN_EYES_FRAMES_THRESHOLD}", (255, 255, 255)),
+                (f"No Face: {no_face_counter}", (255, 255, 255)),
             ]
             
-            for i, stat in enumerate(stats):
+            for i, (stat, color) in enumerate(stats):
                 y_pos = right_y_start + (i * line_height)
-                color = (0, 255, 0) if i == 0 else (255, 255, 255)
-                cv2.putText(
-                    display,
-                    stat,
-                    (right_x, y_pos),
-                    cv2.FONT_HERSHEY_SIMPLEX,
-                    font_scale * 0.5,
-                    color,
-                    1,
-                    cv2.LINE_AA,
-                )
+                if y_pos < h - 30:  # Ensure not beyond bottom
+                    cv2.putText(
+                        display,
+                        stat,
+                        (right_x, y_pos),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        font_scale * 0.45,
+                        color,
+                        1 if stat.startswith("=") else 1,
+                        cv2.LINE_AA,
+                    )
 
             # ===== Hướng dẫn =====
             cv2.putText(
