@@ -27,8 +27,8 @@ FRAME_HEIGHT = 720
 # Điều chỉnh cho phù hợp với kính mắt
 EAR_THRESHOLD = 0.15
 
-# Xác suất model dự đoán Closed_Eyes để coi là mắt nhắm
-MODEL_CLOSED_CONF_THRESHOLD = 0.7
+# Xác suất model dự đoán Closed_Eyes để coi là mắt nhắm (tăng threshold để chặt hơn)
+MODEL_CLOSED_CONF_THRESHOLD = 0.85
 
 # Số frame nhắm mắt liên tục để bật cảnh báo
 DROWSY_FRAMES_THRESHOLD = 15
@@ -182,7 +182,15 @@ def main() -> None:
             # EAR thấp hơn ngưỡng thì coi là nhắm
             closed_by_ear = avg_ear < EAR_THRESHOLD
 
-            eyes_closed = closed_by_ear and closed_by_model
+            # ===== LOGIC: Ưu tiên EAR hơn model =====
+            # Nếu EAR cao (mắt mở) -> bỏ qua model prediction (model có thể sai)
+            # Nếu EAR thấp AND model cũng nói đóng -> chắc chắn đóng
+            if not closed_by_ear and closed_by_model:
+                # EAR nói mắt mở nhưng model nói mắt đóng -> tin EAR hơn
+                eyes_closed = False
+            else:
+                # Ngôn lại dùng logic AND bình thường
+                eyes_closed = closed_by_ear and closed_by_model
 
             # ===== Logic bật/tắt cảnh báo =====
             if eyes_closed:
