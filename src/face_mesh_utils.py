@@ -7,8 +7,13 @@ import cv2
 import mediapipe as mp
 import numpy as np
 
-
-mp_face_mesh = mp.solutions.face_mesh
+try:
+    mp_face_mesh = mp.solutions.face_mesh
+except Exception as e:
+    print(f"[ERROR] MediaPipe import failed: {e}")
+    print(f"[DEBUG] mp module: {mp}")
+    print(f"[DEBUG] mp.solutions: {getattr(mp, 'solutions', 'NOT FOUND')}")
+    raise
 
 LEFT_EYE_EAR_IDXS = [33, 160, 158, 133, 153, 144]
 RIGHT_EYE_EAR_IDXS = [362, 385, 387, 263, 373, 380]
