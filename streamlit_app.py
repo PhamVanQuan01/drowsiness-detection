@@ -16,21 +16,29 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ===== IMPORTS =====
-from src.face_mesh_utils import FaceMeshDetector
-from src.ear import compute_ear
-from src.inference import EyeStateClassifier
-
-# ===== CACHE =====
+# ===== OPENCV CASCADE CLASSIFIERS =====
 @st.cache_resource
-def load_models():
-    BASE_DIR = Path(__file__).resolve().parent
-    MODEL_PATH = BASE_DIR / "models" / "eye_state_model_final.keras"
-    LABEL_MAP_PATH = BASE_DIR / "models" / "label_map.json"
+def load_cascades():
+    """Load OpenCV Haar Cascade classifiers"""
+    face_cascade = cv2.CascadeClassifier(
+        cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
+    )
+    eye_cascade = cv2.CascadeClassifier(
+        cv2.data.haarcascades + 'haarcascade_eye.xml'
+    )
+    return face_cascade, eye_cascade
+
+# ===== EAR COMPUTATION =====
+def compute_ear(eye_points):
+    """Compute Eye Aspect Ratio (EAR) from 6 eye landmarks"""
+    if len(eye_points) < 6:
+        return 1.0
     
-    detector = FaceMeshDetector()
-    classifier = EyeStateClassifier(MODEL_PATH, LABEL_MAP_PATH)
-    return detector, classifier
+    A = np.linalg.norm(np.array(eye_points[1]) - np.array(eye_points[5]))
+    B = np.linalg.norm(np.array(eye_points[2]) - np.array(eye_points[4]))
+    C = np.linalg.norm(np.array(eye_points[0]) - np.array(eye_points[3]))
+    ear = (A + B) / (2.0 * C) if C > 0 else 0.0
+    return max(0, min(1, ear))
 
 @st.cache_data
 def load_training_data():
@@ -185,7 +193,7 @@ elif page == "🤖 Triển khai Mô hình":
     
     if uploaded_file is not None:
         try:
-            detector, classifier = load_models()
+            face_cascade, eye_cascade = load_cascades()
             
             # ===== XỬ LÝ ẢNH =====
             if uploaded_file.type.startswith('image'):
@@ -193,16 +201,34 @@ elif page == "🤖 Triển khai Mô hình":
                 
                 image = Image.open(uploaded_file)
                 frame = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
+                gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
                 
-                result = detector.process(frame, draw=True)
-                display = result.frame_bgr.copy()
+                display = frame.copy()
+                faces = face_cascade.detectMultiScale(gray, 1.1, 4)
                 
-                if result.face_found:
-                    left_ear = compute_ear(result.left_eye_points) if result.left_eye_points else 0.0
-                    right_ear = compute_ear(result.right_eye_points) if result.right_eye_points else 0.0
-                    avg_ear = (left_ear + right_ear) / 2.0
+                if len(faces) > 0:
+                    face_found = True
+                    x, y, w, h = faces[0]
+                    cv2.rectangle(display, (x, y), (x+w, y+h), (0, 255, 0), 2)
                     
-                    # Vẽ kết quả
+                    # Detect eyes
+                    roi_gray = gray[y:y+h, x:x+w]
+                    roi_color = frame[y:y+h, x:x+w]
+                    eyes = eye_cascade.detectMultiScale(roi_gray)
+                    
+                    if len(eyes) >= 2:
+                        # Simple EAR approximation from eye width/height ratio
+                        eye_heights = [h for (ex, ey, ew, eh) in eyes[:2]]
+                        eye_widths = [w for (ex, ey, ew, eh) in eyes[:2]]
+                        avg_ear = np.mean(eye_heights) / (np.mean(eye_widths) + 1e-5) if eye_widths else 0.15
+                        
+                        # Draw eyes
+                        for i, (ex, ey, ew, eh) in enumerate(eyes[:2]):
+                            cv2.rectangle(roi_color, (ex, ey), (ex+ew, ey+eh), (255, 0, 0), 2)
+                    else:
+                        avg_ear = 0.25  # Default to open if few eyes detected
+                    
+                    # Draw results
                     cv2.putText(
                         display,
                         f"EAR: {avg_ear:.3f}",
@@ -238,8 +264,7 @@ elif page == "🤖 Triển khai Mô hình":
                     with col2:
                         st.markdown("### 📊 Kết Quả Phân Tích")
                         st.metric("Eye Aspect Ratio (EAR)", f"{avg_ear:.3f}")
-                        st.metric("Left Eye EAR", f"{left_ear:.3f}")
-                        st.metric("Right Eye EAR", f"{right_ear:.3f}")
+                        st.metric("Mắt Phát Hiện", f"{len(eyes[:2])} cặp")
                         
                         if avg_ear < 0.17:
                             st.error("⚠️ **MẮT ĐÓNG** - Mức độ buồn ngủ CAO!")
@@ -271,12 +296,20 @@ elif page == "🤖 Triển khai Mô hình":
                     if not ret or frame_count >= 100:
                         break
                     
-                    result = detector.process(frame, draw=True)
+                    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                    faces = face_cascade.detectMultiScale(gray, 1.1, 4)
                     
-                    if result.face_found:
-                        left_ear = compute_ear(result.left_eye_points) if result.left_eye_points else 0.0
-                        right_ear = compute_ear(result.right_eye_points) if result.right_eye_points else 0.0
-                        avg_ear = (left_ear + right_ear) / 2.0
+                    if len(faces) > 0:
+                        x, y, w, h = faces[0]
+                        roi_gray = gray[y:y+h, x:x+w]
+                        eyes = eye_cascade.detectMultiScale(roi_gray)
+                        
+                        if len(eyes) >= 2:
+                            eye_heights = [h for (ex, ey, ew, eh) in eyes[:2]]
+                            eye_widths = [w for (ex, ey, ew, eh) in eyes[:2]]
+                            avg_ear = np.mean(eye_heights) / (np.mean(eye_widths) + 1e-5) if eye_widths else 0.15
+                        else:
+                            avg_ear = 0.25
                         
                         ear_values.append(avg_ear)
                         
