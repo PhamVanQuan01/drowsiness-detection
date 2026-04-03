@@ -357,7 +357,7 @@ def render_page_eda() -> None:
     col1, col2 = st.columns(2)
     with col1:
         st.markdown("**Họ tên SV:** Phạm Văn Quân")
-        st.markdown("**MSSV:** 22T1020347")
+        st.markdown("**MSV:** 22T1020347")
     with col2:
         st.markdown("**Mô tả bài toán:**")
         st.write(
