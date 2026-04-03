@@ -5,7 +5,7 @@ from typing import Any
 import json
 
 import numpy as np
-from keras.models import load_model
+from tensorflow.keras.models import load_model
 
 from src.preprocessing import prepare_eye_crop_for_model
 
