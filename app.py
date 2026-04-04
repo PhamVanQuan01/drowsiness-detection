@@ -12,7 +12,6 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 import matplotlib.pyplot as plt
-
 from src.alarm import AlarmPlayer
 from src.ear import compute_average_ear, ear_to_closed_score
 from src.face_mesh_utils import FaceMeshDetector

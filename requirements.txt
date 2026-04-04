@@ -1,8 +1,8 @@
 streamlit>=1.28.0
 numpy<2.0.0
 Pillow>=10.0.0
-opencv-python-headless>=4.8.0
-mediapipe==0.10.33
+opencv-python-headless==4.10.0.84
+mediapipe==0.10.21
 scipy>=1.11.0
-tensorflow==2.15.0
-
+tensorflow==2.16.1
+pygame==2.6.1
