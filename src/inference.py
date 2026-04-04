@@ -44,20 +44,10 @@ class EyeStateClassifier:
     def _load_model(self):
         if not self.model_path.exists():
             raise FileNotFoundError(f"Không tìm thấy model: {self.model_path}")
-
         try:
-            # Thử load .keras trước
-            model = load_model(self.model_path, compile=False, safe_mode=False)
+            model = load_model(self.model_path, compile=False)
             return model
         except Exception as e:
-            # Fallback sang .h5 nếu có
-            h5_path = self.model_path.with_suffix('.h5')
-            if h5_path.exists():
-                try:
-                    model = load_model(h5_path, compile=False)
-                    return model
-                except Exception as h5_error:
-                    raise RuntimeError(f"Cả .keras và .h5 đều fail: {e} | {h5_error}") from e
             raise RuntimeError(f"Lỗi khi load model từ {self.model_path}: {e}") from e
 
     def _load_label_map(self) -> dict[int, str]:

@@ -24,7 +24,7 @@ from src.inference import EyeStateClassifier
 # Paths
 # =========================
 BASE_DIR = Path(__file__).resolve().parent
-MODEL_PATH = BASE_DIR / "models" / "eye_state_model_final.keras"
+MODEL_PATH = BASE_DIR / "models" / "eye_state_model_final.h5"
 LABEL_MAP_PATH = BASE_DIR / "models" / "label_map.json"
 ALARM_PATH = BASE_DIR / "assets" / "alarm.wav"
 OUTPUT_DIR = BASE_DIR / "outputs"
@@ -690,7 +690,7 @@ def render_page_eda() -> None:
 
     st.markdown(
         "<h3 style='text-align:center;color:#1f77b4;'>"
-        " ĐỀ TÀI: PHÁT HIỆN TRẠNG THÁI BUỒN NGỦ CỦA TÀI XẾ BẰNG MÔ HÌNH "
+        " ĐỀ TÀI:PHÁT HIỆN TRẠNG THÁI BUỒN NGỦ CỦA TÀI XẾ BẰNG MÔ HÌNH "
         "MOBILENETV2 KẾT HỢP CHỈ SỐ EAR NHẰM CẢNH BÁO KỊP THỜI"
         "</h3>",
         unsafe_allow_html=True,

@@ -192,7 +192,7 @@ def prepare_eye_crop_for_model(
     Quy trình:
     - resize
     - BGR -> RGB (nếu cần)
-    - normalize
+    - normalize (MobileNetV2: [-1, 1])
     - add batch dimension
 
     Parameters
@@ -204,7 +204,7 @@ def prepare_eye_crop_for_model(
     convert_to_rgb : bool
         Có đổi BGR sang RGB không
     normalize : bool
-        Có chia 255 không
+        Có chuẩn hóa về [-1, 1] không
 
     Returns
     -------
@@ -220,7 +220,9 @@ def prepare_eye_crop_for_model(
         processed = bgr_to_rgb(processed)
 
     if normalize:
-        processed = normalize_image(processed, scale_01=True)
+        # MobileNetV2 cần range [-1, 1], không phải [0, 1]
+        processed = processed.astype("float32")
+        processed = (processed / 127.5) - 1.0
 
     processed = np.expand_dims(processed, axis=0)
     return processed
