@@ -45,11 +45,19 @@ class EyeStateClassifier:
             raise FileNotFoundError(f"Không tìm thấy model: {self.model_path}")
 
         try:
-            # Load model an toàn: compile=False tránh lệch version Keras khi deserialize
+            # Thử load .keras trước
             model = load_model(self.model_path, compile=False, safe_mode=False)
             return model
-        except Exception as exc:
-            raise RuntimeError(f"Lỗi khi load model Keras từ {self.model_path}: {exc}") from exc
+        except Exception as e:
+            # Fallback sang .h5 nếu có
+            h5_path = self.model_path.with_suffix('.h5')
+            if h5_path.exists():
+                try:
+                    model = load_model(h5_path, compile=False)
+                    return model
+                except Exception as h5_error:
+                    raise RuntimeError(f"Cả .keras và .h5 đều fail: {e} | {h5_error}") from e
+            raise RuntimeError(f"Lỗi khi load model từ {self.model_path}: {e}") from e
 
     def _load_label_map(self) -> dict[int, str]:
         if not self.label_map_path.exists():
@@ -160,4 +168,3 @@ class EyeStateClassifier:
         Kiểm tra mắt có được dự đoán là nhắm không.
         """
         return self.get_closed_prob(pred) >= threshold
-    
