@@ -46,7 +46,7 @@ class EyeStateClassifier:
 
         try:
             # Load model an toàn: compile=False tránh lệch version Keras khi deserialize
-            model = load_model(self.model_path, compile=False)
+            model = load_model(self.model_path, compile=False, safe_mode=False)
             return model
         except Exception as exc:
             raise RuntimeError(f"Lỗi khi load model Keras từ {self.model_path}: {exc}") from exc
