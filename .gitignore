@@ -43,3 +43,6 @@ data/raw/
 # Cache
 *.cache
 .pytest_cache/
+
+# Outputs
+outputs/
