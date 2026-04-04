@@ -1190,8 +1190,7 @@ def render_page_deploy() -> None:
 def render_page_evaluation() -> None:
     st.title("📊 3. Đánh giá & Hiệu năng (Evaluation)")
     st.write(
-        "Trang này phân tích các chỉ số đánh giá của mô hình (Accuracy, Loss), "
-        "biểu đồ hiệu năng, ma trận nhầm lẫn và các phân tích chuyên sâu định hướng."
+        
     )
 
     # ---- Load data files ----
@@ -1307,15 +1306,15 @@ def render_page_evaluation() -> None:
     with st.expander("📋 Bảng chi tiết 14 Epochs huấn luyện", expanded=False):
         epochs_table = pd.DataFrame({
             "Epoch":      list(range(1, 15)),
-            "Train Loss": [0.112, 0.026, 0.019, 0.017, 0.013, 0.010, 0.008, 0.007, 0.006, 0.006, 0.079, 0.025, 0.019, 0.016],
-            "Val Loss":   [0.080, 0.070, 0.064, 0.058, 0.057, 0.054, 0.055, 0.061, 0.057, 0.031, 0.058, 0.054, 0.054, 0.065],
-            "Train Acc":  [0.9655, 0.9947, 0.9962, 0.9962, 0.9968, 0.9972, 0.9973, 0.9982, 0.9979, 0.9979, 0.9717, 0.9920, 0.9960, 0.9949],
-            "Val Acc":    [0.9730, 0.9775, 0.9775, 0.9762, 0.9775, 0.9775, 0.9775, 0.9775, 0.9775, 0.9821, 0.9800, 0.9786, 0.9786, 0.9762],
-            "Ghi chú":    ["Khởi động", "", "", "", "", "", "", "", "", "✅ Best val acc", "⚡ LR reset (fine-tune)",
-                           "", "", "Final"],
+            "Train Loss": [0.1134, 0.0258, 0.0176, 0.0154, 0.0113, 0.0090, 0.0084, 0.0057, 0.0065, 0.0067, 0.0792, 0.0246, 0.0151, 0.0148],
+            "Val Loss":   [0.0801, 0.0626, 0.0576, 0.0564, 0.0526, 0.0537, 0.0484, 0.0607, 0.0449, 0.0304, 0.0573, 0.0534, 0.0580, 0.0649],
+            "Train Acc":  [0.9660, 0.9948, 0.9962, 0.9960, 0.9967, 0.9972, 0.9972, 0.9988, 0.9986, 0.9981, 0.9712, 0.9920, 0.9960, 0.9948],
+            "Val Acc":    [0.9732, 0.9777, 0.9777, 0.9762, 0.9777, 0.9777, 0.9792, 0.9777, 0.9807, 0.9821, 0.9792, 0.9792, 0.9792, 0.9762],
+            "Ghi chú":    ["Khởi động", "", "", "", "", "", "", "", "", "✅ Best (98.21%)", "⚡ Fine-tune (Phân đoạn 2)",
+                           "", "", "Final / Early Stopping"],
         })
         st.dataframe(epochs_table, use_container_width=True, hide_index=True)
-        st.caption("Epoch 10 đạt Val Accuracy cao nhất (98.21%). Spike tại epoch 11 do unfreeze base layers + LR reset.")
+        st.caption("Epoch 10 là mốc mấu chốt đạt Val Accuracy 98.21% và Val Loss thấp nhất (0.0304). Bước sang Epoch 11, mô hình được unfreeze/reset LR để tinh chỉnh.")
 
     # ==========================================
     # PHÂN TÍCH SAI SỐ
