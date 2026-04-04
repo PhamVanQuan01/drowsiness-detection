@@ -685,12 +685,12 @@ def plot_metrics_bar():
 # =========================
 
 def render_page_eda() -> None:
-    st.title("🚀 1. Giới thiệu & Khám phá dữ liệu (EDA)")
+    st.title("🚀 1. Giới thiệu & Khám phá dữ liệu")
     st.markdown("---")
 
     st.markdown(
         "<h3 style='text-align:center;color:#1f77b4;'>"
-        "ĐỀ TÀI: PHÁT HIỆN TRẠNG THÁI BUỒN NGỦ CỦA TÀI XẾ BẰNG MÔ HÌNH "
+        " ĐỀ TÀI: PHÁT HIỆN TRẠNG THÁI BUỒN NGỦ CỦA TÀI XẾ BẰNG MÔ HÌNH "
         "MOBILENETV2 KẾT HỢP CHỈ SỐ EAR NHẰM CẢNH BÁO KỊP THỜI"
         "</h3>",
         unsafe_allow_html=True,
@@ -706,7 +706,7 @@ def render_page_eda() -> None:
             "🆔 **Mã sinh viên:** 22T1020347"
         )
     with col2:
-        st.success(
+        st.success("**Giới thiệu**\n\n"
             "Tai nạn giao thông do buồn ngủ là một trong những nguyên nhân hàng đầu gây ra thiệt hại nghiêm trọng. "
             "bài toán này nhằm **theo dõi và phân tích chỉ số khía cạnh mắt (EAR)** của tài xế qua camera theo thời gian thực "
             "và sẽ lập tức phát tín hiệu cảnh báo (âm thanh ) khi tài xế ngủ gật."
