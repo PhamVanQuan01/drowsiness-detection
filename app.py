@@ -450,20 +450,35 @@ def plot_split_label_breakdown():
 
 
 def plot_ear_distribution():
-    x = np.linspace(0, 0.5, 500)
-    closed_dist = np.exp(-0.5 * ((x - 0.10) / 0.025) ** 2)
+    """
+    Phân phối EAR khớp với tham số mặc định trong code:
+      ear_open   = 0.30   (ngưỡng mở mắt chuẩn)
+      ear_closed = 0.18   (ngưỡng nhắm mắt)
+    → Closed_Eyes tập trung quanh μ≈0.14 (dưới ngưỡng 0.18)
+    → Open_Eyes   tập trung quanh μ≈0.30 (vùng mở chuẩn)
+    """
+    x = np.linspace(0, 0.50, 500)
+    # Closed: μ=0.14, σ=0.025  (rơi vào vùng < ear_closed=0.18)
+    closed_dist = np.exp(-0.5 * ((x - 0.14) / 0.025) ** 2)
+    # Open:   μ=0.30, σ=0.040  (rơi vào vùng ≈ ear_open=0.30)
     open_dist   = np.exp(-0.5 * ((x - 0.30) / 0.040) ** 2)
+
     fig, ax = plt.subplots(figsize=(7, 4))
-    ax.fill_between(x, closed_dist, alpha=0.45, color="#e74c3c", label="Closed_Eyes (μ≈0.10)")
-    ax.fill_between(x, open_dist,   alpha=0.45, color="#2ecc71", label="Open_Eyes (μ≈0.30)")
+    ax.fill_between(x, closed_dist, alpha=0.45, color="#e74c3c", label="Closed_Eyes (μ≈0.14)")
+    ax.fill_between(x, open_dist,   alpha=0.45, color="#2ecc71", label="Open_Eyes  (μ≈0.30)")
     ax.plot(x, closed_dist, color="#c0392b", linewidth=1.8)
     ax.plot(x, open_dist,   color="#27ae60", linewidth=1.8)
-    ax.axvline(0.18, color="#f39c12", linewidth=2,   linestyle="--", label="Ngưỡng EAR = 0.18")
-    ax.axvline(0.30, color="#3498db", linewidth=1.5, linestyle=":",  label="EAR mở chuẩn = 0.30")
+
+    # Ngưỡng khớp với code: ear_closed_thresh=0.18, ear_open=0.30
+    ax.axvline(0.18, color="#f39c12", linewidth=2,   linestyle="--",
+               label="Ngưỡng EAR nhắm = 0.18  (ear_closed)")
+    ax.axvline(0.30, color="#3498db", linewidth=1.5, linestyle=":",
+               label="Ngưỡng EAR mở  = 0.30  (ear_open)")
+
     ax.set_title("Phân phối EAR theo nhãn (ước tính)", fontsize=12, fontweight="bold", pad=10)
     ax.set_xlabel("Giá trị EAR", fontsize=11)
     ax.set_ylabel("Mật độ xác suất (chuẩn hóa)", fontsize=10)
-    ax.legend(fontsize=9); ax.set_xlim(0, 0.5)
+    ax.legend(fontsize=9); ax.set_xlim(0, 0.50)
     ax.spines[["top", "right"]].set_visible(False)
     ax.set_facecolor("#f8f9fa"); fig.patch.set_facecolor("#f8f9fa")
     fig.tight_layout()
@@ -509,39 +524,63 @@ def plot_ear_diagram():
 
 
 def plot_mobilenet_architecture():
+    """
+    Pipeline khớp với LaTeX:
+    Input 224×224×3
+    → Normalize [-1,1]
+    → Data Augmentation (train only)
+    → MobileNetV2 pretrained ImageNet (include_top=False)
+    → GlobalAveragePooling2D
+    → Dropout(0.3)
+    → Dense(1, sigmoid)
+    → Xác suất Open/Closed
+    """
     blocks = [
-        ("Input\n224×224×3",        "#8e44ad"),
-        ("Normalize\n& Data Aug",   "#2980b9"),
-        ("MobileNetV2\n(ImageNet)", "#2980b9"),
-        ("GlobalAvg\nPool2D",       "#16a085"),
-        ("Dropout",                 "#16a085"),
-        ("Dense(1)\n(Sigmoid)",     "#16a085"),
-        ("Xác suất\nClosed/Open",   "#27ae60"),
+        ("Input\n224×224×3",              "#8e44ad"),
+        ("Normalize\n[-1, 1]",            "#2980b9"),
+        ("Data Aug\n(train only)",         "#2980b9"),
+        ("MobileNetV2\n(ImageNet)\ninclude_top=False", "#2980b9"),
+        ("GlobalAvg\nPool2D",             "#16a085"),
+        ("Dropout(0.3)",                  "#16a085"),
+        ("Dense(1)\nSigmoid",             "#16a085"),
+        ("Xác suất\nOpen / Closed",        "#27ae60"),
     ]
-    fig, ax = plt.subplots(figsize=(12, 2.4))
+    fig, ax = plt.subplots(figsize=(14, 2.6))
     ax.axis("off"); ax.set_facecolor("#1a1a2e"); fig.patch.set_facecolor("#1a1a2e")
     n = len(blocks)
     for i, (label, color) in enumerate(blocks):
         x = i / (n - 1)
         rect = mpatches.FancyBboxPatch(
-            (x - 0.055, 0.15), 0.11, 0.70, boxstyle="round,pad=0.02",
+            (x - 0.055, 0.10), 0.11, 0.80,
+            boxstyle="round,pad=0.02",
             facecolor=color + "33", edgecolor=color, linewidth=1.8,
             transform=ax.transAxes, clip_on=False,
         )
         ax.add_patch(rect)
         ax.text(x, 0.50, label, transform=ax.transAxes, color="white",
-                fontsize=8, ha="center", va="center", multialignment="center")
+                fontsize=7.5, ha="center", va="center", multialignment="center")
         if i < n - 1:
-            ax.annotate("", xy=((i + 1) / (n - 1) - 0.057, 0.50),
-                        xytext=(x + 0.057, 0.50),
-                        xycoords="axes fraction", textcoords="axes fraction",
-                        arrowprops=dict(arrowstyle="-|>", color="#95a5a6", lw=1.2))
-    ax.set_title("Kiến trúc Pipeline MobileNetV2 (Transfer Learning từ ImageNet)",
-                 color="white", fontsize=11, fontweight="bold", pad=10)
+            ax.annotate(
+                "", xy=((i + 1) / (n - 1) - 0.057, 0.50),
+                xytext=(x + 0.057, 0.50),
+                xycoords="axes fraction", textcoords="axes fraction",
+                arrowprops=dict(arrowstyle="-|>", color="#95a5a6", lw=1.2),
+            )
+    ax.set_title(
+        "Kiến trúc Pipeline MobileNetV2 (Transfer Learning từ ImageNet)",
+        color="white", fontsize=11, fontweight="bold", pad=10,
+    )
     st.pyplot(fig); plt.close(fig)
 
 
 def plot_fusion_diagram():
+    """
+    Sơ đồ fusion khớp với hàm fuse_eye_scores() trong code:
+      ear_score  = ear_to_closed_score(avg_ear, ear_open=0.30, ear_closed=0.18)
+      cnn_score  = (left_closed_prob + right_closed_prob) / 2.0
+      fused_score = alpha * cnn_score + (1 - alpha) * ear_score
+    Sau đó qua deque smoothing → quyết định AWAKE / SUSPICIOUS / ALERT.
+    """
     fig, ax = plt.subplots(figsize=(10, 3.8))
     ax.axis("off"); ax.set_facecolor("#0f1923"); fig.patch.set_facecolor("#0f1923")
 
@@ -564,28 +603,41 @@ def plot_fusion_diagram():
             ax.text(mx, my + 0.06, label, transform=ax.transAxes,
                     color=color, fontsize=7, ha="center")
 
-    box(0.05, 0.75, "Left Eye\nCrop",          "#9b59b6")
-    box(0.05, 0.25, "Right Eye\nCrop",         "#9b59b6")
-    box(0.20, 0.50, "MediaPipe\nFace Mesh",    "#2980b9")
-    box(0.35, 0.75, "CNN Output\nP(closed)_L", "#e67e22")
-    box(0.35, 0.25, "CNN Output\nP(closed)_R", "#e67e22")
-    box(0.35, 0.50, "EAR\nNormalized",         "#16a085")
-    box(0.52, 0.65, "CNN_score\n= avg(L,R)",   "#e67e22")
-    box(0.68, 0.50, "Fused Score\n= α*CNN\n+(1-α)*EAR", "#c0392b")
-    box(0.83, 0.50, "Temporal\nSmoothing\n(Mean N frames)", "#3498db")
+    # Nodes
+    box(0.05, 0.75, "Left Eye\nCrop",                    "#9b59b6")
+    box(0.05, 0.25, "Right Eye\nCrop",                   "#9b59b6")
+    box(0.20, 0.50, "MediaPipe\nFace Mesh",              "#2980b9")
+    box(0.35, 0.75, "CNN Output\nP(closed)_L",           "#e67e22")
+    box(0.35, 0.25, "CNN Output\nP(closed)_R",           "#e67e22")
+    # --- SỬA: label EAR khớp với ear_to_closed_score() ---
+    box(0.35, 0.50, "EAR Score\n→ [0,1]\n(closed score)", "#16a085")
+    box(0.52, 0.65, "CNN Score\n= avg(L, R)",            "#e67e22")
+    # --- SỬA: công thức rõ ràng hơn ---
+    box(0.68, 0.50, "Fused Score\n= α·CNN\n+(1-α)·EAR", "#c0392b")
+    box(0.83, 0.50, "Temporal\nSmoothing\n(Moving Avg\nN frames)", "#3498db")
     box(0.96, 0.75, "AWAKE\n✅",      "#27ae60")
     box(0.96, 0.50, "SUSPICIOUS\n⚠️", "#f39c12")
     box(0.96, 0.25, "ALERT\n🚨",      "#e74c3c")
-    arrow(0.11, 0.75, 0.16, 0.62); arrow(0.11, 0.25, 0.16, 0.38)
-    arrow(0.24, 0.62, 0.30, 0.55); arrow(0.24, 0.68, 0.30, 0.75)
-    arrow(0.24, 0.38, 0.30, 0.25); arrow(0.40, 0.75, 0.46, 0.70)
-    arrow(0.40, 0.25, 0.46, 0.60); arrow(0.40, 0.50, 0.62, 0.52)
-    arrow(0.58, 0.65, 0.62, 0.58); arrow(0.74, 0.50, 0.77, 0.50)
-    arrow(0.89, 0.58, 0.91, 0.73, "< threshold", "#27ae60")
-    arrow(0.89, 0.50, 0.91, 0.50, "≥ thresh",    "#f39c12")
-    arrow(0.89, 0.42, 0.91, 0.27, "≥ th + time", "#e74c3c")
-    ax.set_title("Sơ đồ luồng Fusion Score (EAR + CNN → Smoothing → Quyết định)",
-                 color="white", fontsize=11, fontweight="bold", pad=8)
+
+    # Arrows
+    arrow(0.11, 0.75, 0.16, 0.62)
+    arrow(0.11, 0.25, 0.16, 0.38)
+    arrow(0.24, 0.62, 0.30, 0.55)
+    arrow(0.24, 0.68, 0.30, 0.75)
+    arrow(0.24, 0.38, 0.30, 0.25)
+    arrow(0.40, 0.75, 0.46, 0.70)
+    arrow(0.40, 0.25, 0.46, 0.60)
+    arrow(0.40, 0.50, 0.62, 0.52)          # EAR → Fused (trực tiếp)
+    arrow(0.58, 0.65, 0.62, 0.58)          # CNN Score → Fused
+    arrow(0.74, 0.50, 0.77, 0.50)          # Fused → Smoothing
+    arrow(0.89, 0.58, 0.91, 0.73, "< suspicious_thresh",  "#27ae60")
+    arrow(0.89, 0.50, 0.91, 0.50, "≥ suspicious_thresh",  "#f39c12")
+    arrow(0.89, 0.42, 0.91, 0.27, "≥ alert_thresh + time","#e74c3c")
+
+    ax.set_title(
+        "Sơ đồ luồng Fusion Score  (EAR Score + CNN Score → Smoothing → Quyết định)",
+        color="white", fontsize=11, fontweight="bold", pad=8,
+    )
     st.pyplot(fig); plt.close(fig)
 
 
@@ -625,7 +677,7 @@ def plot_state_machine():
 
 
 def plot_confusion_matrix_custom():
-    cm = np.array([[335, 26], [0, 186]]); labels = ["Closed_Eyes", "Open_Eyes"]
+    cm = np.array([[349, 12], [0, 186]]); labels = ["Closed_Eyes", "Open_Eyes"]
     fig, ax = plt.subplots(figsize=(6, 5))
     im = ax.imshow(cm, cmap="Blues", vmin=0, vmax=cm.max())
     ax.set_xticks([0, 1]); ax.set_yticks([0, 1])
@@ -633,7 +685,7 @@ def plot_confusion_matrix_custom():
     ax.set_xlabel("Predicted Label", fontsize=12, labelpad=10)
     ax.set_ylabel("True Label",      fontsize=12, labelpad=10)
     ax.set_title("Confusion Matrix — Test Set (547 mẫu)", fontsize=12, fontweight="bold", pad=12)
-    cell_labels = [["TP = 335\n(61.2%)", "FN = 26\n(4.8%)"],
+    cell_labels = [["TP = 349\n(63.8%)", "FN = 12\n(2.2%)"],
                    ["FP = 0\n(0.0%)",    "TN = 186\n(34.0%)"]]
     colors_text = [["white", "#1a3a6e"], ["#1a3a6e", "white"]]
     for i in range(2):
@@ -645,11 +697,11 @@ def plot_confusion_matrix_custom():
 
 
 def plot_training_curves():
-    epochs     = list(range(1, 15))
-    train_loss = [0.112, 0.026, 0.019, 0.017, 0.013, 0.010, 0.008, 0.007, 0.006, 0.006, 0.079, 0.025, 0.019, 0.016]
-    val_loss   = [0.080, 0.070, 0.064, 0.058, 0.057, 0.054, 0.055, 0.061, 0.057, 0.031, 0.058, 0.054, 0.054, 0.065]
-    train_acc  = [0.9655, 0.9947, 0.9962, 0.9962, 0.9968, 0.9972, 0.9973, 0.9982, 0.9979, 0.9979, 0.9717, 0.9920, 0.9960, 0.9949]
-    val_acc    = [0.9730, 0.9775, 0.9775, 0.9762, 0.9775, 0.9775, 0.9775, 0.9775, 0.9775, 0.9821, 0.9800, 0.9786, 0.9786, 0.9762]
+    epochs     = list(range(1, 16))
+    train_loss = [0.1123, 0.0348, 0.0203, 0.0178, 0.0148, 0.0103, 0.0107, 0.0070, 0.0086, 0.0067, 0.0792, 0.0245, 0.0185, 0.0106, 0.0098]
+    val_loss   = [0.0803, 0.0623, 0.0574, 0.0564, 0.0526, 0.0537, 0.0485, 0.0607, 0.0450, 0.0305, 0.0575, 0.0540, 0.0643, 0.0767, 0.0772]
+    train_acc  = [0.9672, 0.9913, 0.9948, 0.9947, 0.9946, 0.9963, 0.9968, 0.9980, 0.9965, 0.9981, 0.9712, 0.9917, 0.9922, 0.9964, 0.9972]
+    val_acc    = [0.9732, 0.9777, 0.9777, 0.9762, 0.9777, 0.9777, 0.9792, 0.9777, 0.9807, 0.9821, 0.9792, 0.9792, 0.9792, 0.9762, 0.9762]
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4.5))
     ax1.plot(epochs, train_loss, "o-", color="#3498db", linewidth=2, markersize=5, label="Train Loss")
     ax1.plot(epochs, val_loss,   "s-", color="#e67e22", linewidth=2, markersize=5, label="Val Loss")
@@ -667,16 +719,16 @@ def plot_training_curves():
     ax2.set_title("Accuracy theo Epoch", fontsize=12, fontweight="bold")
     ax2.set_xlabel("Epoch"); ax2.set_ylabel("Accuracy")
     ax2.legend(fontsize=10); ax2.grid(True, alpha=0.3); ax2.set_facecolor("#f8f9fa")
-    plt.suptitle("Quá trình huấn luyện MobileNetV2 — 14 Epochs",
+    plt.suptitle("Quá trình huấn luyện MobileNetV2 — 15 Epochs",
                  fontsize=13, fontweight="bold", y=1.01)
     plt.tight_layout(); st.pyplot(fig); plt.close(fig)
 
 
 def plot_metrics_bar():
     metrics_data = {
-        "Precision": {"Closed_Eyes": 1.0000, "Open_Eyes": 0.8776, "Macro avg": 0.9388},
-        "Recall":    {"Closed_Eyes": 0.9281, "Open_Eyes": 1.0000, "Macro avg": 0.9640},
-        "F1-Score":  {"Closed_Eyes": 0.9626, "Open_Eyes": 0.9350, "Macro avg": 0.9488},
+        "Precision": {"Closed_Eyes": 1.0000, "Open_Eyes": 0.9394, "Macro avg": 0.9697},
+        "Recall":    {"Closed_Eyes": 0.9668, "Open_Eyes": 1.0000, "Macro avg": 0.9834},
+        "F1-Score":  {"Closed_Eyes": 0.9831, "Open_Eyes": 0.9688, "Macro avg": 0.9759},
     }
     fig, ax = plt.subplots(figsize=(8, 4.5))
     x = np.arange(3); width = 0.22
@@ -1193,27 +1245,27 @@ def render_page_evaluation() -> None:
         col3.metric("Recall",    f"{metrics.get('recall',    0):.4f}")
         col4.metric("F1-score",  f"{metrics.get('f1_score',  0):.4f}")
     else:
-        TP, FN, FP, TN = 335, 26, 0, 186
+        TP, FN, FP, TN = 349, 12, 0, 186
         total = TP + FP + FN + TN
         acc  = (TP + TN) / total
         prec = TP / (TP + FP) if (TP + FP) > 0 else 0
         rec  = TP / (TP + FN) if (TP + FN) > 0 else 0
         f1   = 2 * TP / (2 * TP + FP + FN)
         col1, col2, col3, col4 = st.columns(4)
-        col1.metric("Accuracy",  f"{acc:.4f}",  delta="95.25%")
+        col1.metric("Accuracy",  f"{acc:.4f}",  delta="97.81%")
         col2.metric("Precision", f"{prec:.4f}", delta="Zero FP ✅")
         col3.metric("Recall",    f"{rec:.4f}")
         col4.metric("F1-score",  f"{f1:.4f}")
 
-    st.warning("⚠️ Recall=0.9280 (FN=26). Precision=1.000 (FP=0) — mọi cảnh báo đều chính xác.")
+    st.warning("⚠️ Recall = 0.9668 (FN = 12). Precision = 1.0000 (FP = 0) — mọi cảnh báo đều chính xác.")
     st.markdown("**So sánh chỉ số theo lớp:**")
     plot_metrics_bar()
 
     report_data = {
         "Nhãn":      ["Closed_Eyes", "Open_Eyes", "Macro avg", "Weighted avg", "Accuracy"],
-        "Precision": ["1.0000",      "0.8774",    "0.9387",    "0.9583",       "—"],
-        "Recall":    ["0.9280",      "1.0000",    "0.9640",    "0.9525",       "—"],
-        "F1-Score":  ["0.9626",      "0.9347",    "0.9487",    "0.9531",       "0.9525"],
+        "Precision": ["1.0000",      "0.9394",    "0.9697",    "0.9794",       "—"],
+        "Recall":    ["0.9668",      "1.0000",    "0.9834",    "0.9781",       "—"],
+        "F1-Score":  ["0.9831",      "0.9688",    "0.9759",    "0.9782",       "0.9781"],
         "Support":   ["361",         "186",       "547",       "547",          "547"],
     }
     st.dataframe(pd.DataFrame(report_data), use_container_width=True, hide_index=True)
@@ -1260,19 +1312,19 @@ def render_page_evaluation() -> None:
         draw_history_chart(history_df, loss_cols, "Loss theo Epoch", "Loss")
 
     st.markdown("---")
-    with st.expander("📋 Bảng chi tiết 14 Epochs", expanded=False):
+    with st.expander("📋 Bảng chi tiết 15 Epochs", expanded=False):
         epochs_table = pd.DataFrame({
-            "Epoch":      list(range(1, 15)),
-            "Train Loss": [0.1134, 0.0258, 0.0176, 0.0154, 0.0113, 0.0090, 0.0084,
-                           0.0057, 0.0065, 0.0067, 0.0792, 0.0246, 0.0151, 0.0148],
-            "Val Loss":   [0.0801, 0.0626, 0.0576, 0.0564, 0.0526, 0.0537, 0.0484,
-                           0.0607, 0.0449, 0.0304, 0.0573, 0.0534, 0.0580, 0.0649],
-            "Train Acc":  [0.9660, 0.9948, 0.9962, 0.9960, 0.9967, 0.9972, 0.9972,
-                           0.9988, 0.9986, 0.9981, 0.9712, 0.9920, 0.9960, 0.9948],
-            "Val Acc":    [0.9732, 0.9777, 0.9777, 0.9762, 0.9777, 0.9777, 0.9792,
-                           0.9777, 0.9807, 0.9821, 0.9792, 0.9792, 0.9792, 0.9762],
-            "Ghi chú":    ["Khởi động", "", "", "", "", "", "", "", "",
-                           "✅ Best (98.21%)", "⚡ Fine-tune", "", "", "Final"],
+            "Epoch":      list(range(1, 16)),
+            "Train Loss": [0.1123, 0.0348, 0.0203, 0.0178, 0.0148, 0.0103, 0.0107, 0.0070, 0.0086, 0.0067, 
+                           0.0792, 0.0245, 0.0185, 0.0106, 0.0098],
+            "Val Loss":   [0.0803, 0.0623, 0.0574, 0.0564, 0.0526, 0.0537, 0.0485, 0.0607, 0.0450, 0.0305, 
+                           0.0575, 0.0540, 0.0643, 0.0767, 0.0772],
+            "Train Acc":  [0.9672, 0.9913, 0.9948, 0.9947, 0.9946, 0.9963, 0.9968, 0.9980, 0.9965, 0.9981, 
+                           0.9712, 0.9917, 0.9922, 0.9964, 0.9972],
+            "Val Acc":    [0.9732, 0.9777, 0.9777, 0.9762, 0.9777, 0.9777, 0.9792, 0.9777, 0.9807, 0.9821, 
+                           0.9792, 0.9792, 0.9792, 0.9762, 0.9762],
+            "Ghi chú":    ["Khởi động", "", "", "", "", "", "", "", "", "✅ Best (98.21%)", 
+                           "⚡ Fine-tune", "", "", "", "Final / Early Stop"],
         })
         st.dataframe(epochs_table, use_container_width=True, hide_index=True)
 
@@ -1280,7 +1332,7 @@ def render_page_evaluation() -> None:
     st.markdown("### 💡 Phân tích sai số & Giải pháp")
     c_err, c_fix = st.columns(2)
     with c_err:
-        st.error("**❌ 26 False Negatives**")
+        st.error("**❌ 12 False Negatives**")
         st.markdown("- Mắt sụp mí / nhắm không hoàn toàn\n- Góc xoay đầu\n- Kính ánh chói")
     with c_fix:
         st.success("**✅ Hướng cải thiện**")
@@ -1288,9 +1340,9 @@ def render_page_evaluation() -> None:
 
     st.markdown("---")
     col1, col2, col3, col4 = st.columns(4)
-    col1.metric("Test Accuracy",      "95.25%")
-    col2.metric("Precision (Closed)", "100.0%", delta="Zero FP")
-    col3.metric("Recall (Closed)",    "92.80%")
+    col1.metric("Test Accuracy",      "97.81%", delta="Tăng 2.56%")
+    col2.metric("Precision (Closed)", "100.0%", delta="Zero FP ✅")
+    col3.metric("Recall (Closed)",    "96.68%")
     col4.metric("Model Params",       "~2.3M")
 
 
